@@ -32,7 +32,7 @@ do {                                                                            
     }                                                                                                                                \
 } while(0)                                                                                                                           \
 
-ITEM ** selected_items = NULL; 
+int selected_items[300] = {0}; 
 
 int update_menu(window_t *w, ITEM ** items);
 
@@ -161,14 +161,6 @@ int main(int argc, char **argv) {
         free_window(playlist_w);
     }
     
-    if(selected_items){
-        int item_c = item_count(painel_w->menu);
-        for(int i = 0; i < item_c; i++){
-            if(selected_items[i]){
-                free(selected_items[i]);
-            }
-        }
-    }
     if(painel_w != NULL){
         free_window(painel_w);
     }
@@ -196,19 +188,6 @@ int search_api(char *path, window_t *w) {
     } response_internals;
 
     static response_internals* response_internal;
-
-    if(!response_internal){
-        response_internal = malloc(sizeof(response_internals));
-        if(!response_internal){
-            TRACE("search_api: Error allocating memory for response_internal");
-            return ERR;
-        }
-        response_internal->path = path;
-        response_internal->next = NULL;
-        response_internal->cur_size = 0;
-        response_internal->total = 0;
-        response_internal->items = NULL;
-    }
     
     if(strcmp(path, "KILL") == 0){
         if(response_internal){
@@ -233,6 +212,20 @@ int search_api(char *path, window_t *w) {
         }
         return OK;
     }
+    
+    if(!response_internal){
+        response_internal = malloc(sizeof(response_internals));
+        if(!response_internal){
+            TRACE("search_api: Error allocating memory for response_internal");
+            return ERR;
+        }
+        response_internal->path = malloc(strlen(path) + 1);
+        strcpy(response_internal->path, path);
+        response_internal->next = NULL;
+        response_internal->cur_size = 0;
+        response_internal->total = 0;
+        response_internal->items = NULL;
+    }
 
     buffer_t *response_data = NULL;
 
@@ -243,7 +236,12 @@ int search_api(char *path, window_t *w) {
             }
         }else{
             response_internal->cur_size = 0;
-            response_internal->path = path;
+            if(response_internal->path){
+                free(response_internal->path);
+            }
+            response_internal->path = malloc(strlen(path) + 1);
+            strcpy(response_internal->path, path);
+
             response_internal->next = NULL;
             if (w->menu != NULL) {
                 TRACE("search_api: Resetting menu");
@@ -506,7 +504,7 @@ char *search_input(const char *label) {
     update_panels();
     doupdate();
 
-    char *input = malloc(1);
+    char *input = calloc(1, sizeof(char));
     if (!input) {
         TRACE("search_input: Error allocating memory for input");
         return NULL;
@@ -592,15 +590,6 @@ int update_menu(window_t *w, ITEM ** items){
     
     REQUIRE("update_menu: menu doesn't exist", w->menu == NULL);
     
-    int item_c = item_count(w->menu);
-
-    void *tmp = realloc(selected_items, item_c * sizeof(ITEM *));
-    if(!tmp){
-        TRACE("main: select: error in alocation selected_items");
-        return ERR;
-    }
-    selected_items = tmp;
-
     return OK;
 }
 
@@ -779,16 +768,19 @@ int free_window(window_t *w) {
         REQUIRE("free_window: Error destroying menu", destroy_menu(w) != OK);
     }
 
+
     WINDOW *window = panel_window(w->panel);
+
     REQUIRE("free_window: window is null", window == NULL);
+    
+    REQUIRE("free_window: Error deleting panel", del_panel(w->panel) != OK);
 
     TRACE("free_window: Freeing window");
+    
     REQUIRE("free_window: Error deleting window", delwin(window) != OK);
     
-    if(w->panel != NULL){
-        REQUIRE("free_window: Error deleting panel", del_panel(w->panel) != OK);
-    }
     TRACE("free_window: Freeing memory");
+    
     free(w);
 
     TRACE("free_window: Ended");
@@ -858,15 +850,19 @@ void select_command(va_list args){
         int item_c = item_count(painel_w->menu);
         ITEM ** itens = menu_items(painel_w->menu);
         for(int i = 0; i < item_c; ++i){
-            drive_menu(painel_w, REQ_DOWN_ITEM);
-            if(itens[i] == selected_items[i]){
-                drive_menu(painel_w, REQ_TOGGLE_ITEM);
-            }
+            TRACE("item a %p b %i", itens[i], selected_items[i]);
+            // drive_menu(painel_w, REQ_DOWN_ITEM);
+
+            // if(itens[i] && selected_items[i]){
+            //     if(strcmp(item_description(itens[i]), item_description(selected_items[i])) == 0){
+            //         drive_menu(painel_w, REQ_TOGGLE_ITEM);
+            //     }
+            // }
            
         }
     }else{
         int index = item_index(it);
-        selected_items[index] = it;
+        selected_items[index] = 1;
         TRACE("main: selecting item %d", index);
         drive_menu(painel_w, REQ_TOGGLE_ITEM);
     }
