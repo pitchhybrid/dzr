@@ -641,23 +641,24 @@ int addLabel(WINDOW *win, char *str) {
 int destroy_menu(window_t *w) {
     REQUIRE("destroy_menu: Invalid parameters", w == NULL || w->menu == NULL);
 
+    ITEM ** items = menu_items(w->menu);
+    if(items){
+        TRACE("destroy_menu: destroying items");
+        destroy_items(items);
+    }
     TRACE("destroy_menu: Unposting menu");
     REQUIRE("destroy_menu: Error unposting menu", unpost_menu(w->menu) != E_OK);
     
-    ITEM ** items = menu_items(w->menu);
-    
-    REQUIRE("items null", items == NULL);
+    WINDOW * subWin = menu_sub(w->menu);
+    if(subWin){
+        REQUIRE("destroy_menu: Error destroying subwin", delwin(subWin) != E_OK);
+    }
     
     TRACE("destroy_menu: Freeing menu");
     
     REQUIRE("destroy_menu: Error freeing menu", free_menu(w->menu) != E_OK);
     
     w->menu = NULL;
-
-    REQUIRE("destroy_menu: No items to free", items == NULL);
-
-    destroy_items(items);
-
     return OK;
 }
 
@@ -760,24 +761,23 @@ int drive_menu(window_t *w, int key) {
 
 int free_window(window_t *w) {
     REQUIRE("free_window: Window is NULL", w == NULL);
-
-    TRACE("free_window: Freeing menu");
-    if (w->menu != NULL) {
+    
+    TRACE("free_window: Freeing window %s", w->label);
+    
+    if (w->menu) {
+        TRACE("free_window: Freeing menu");
         REQUIRE("free_window: Error destroying menu", destroy_menu(w) != OK);
     }
 
-
     WINDOW *window = panel_window(w->panel);
-
-    REQUIRE("free_window: window is null", window == NULL);
     
     REQUIRE("free_window: Error deleting panel", del_panel(w->panel) != OK);
-
-    TRACE("free_window: Freeing window");
     
-    REQUIRE("free_window: Error deleting window", delwin(window) != OK);
-    
-    TRACE("free_window: Freeing memory");
+    if(window){
+        REQUIRE("free_window: Error erase content from window", werase(window) != OK);
+        REQUIRE("free_window: Error deleting window", wrefresh(window) != OK);
+        REQUIRE("free_window: Error deleting window", delwin(window) != OK);
+    }
     
     free(w);
 

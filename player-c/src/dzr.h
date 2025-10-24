@@ -19,7 +19,7 @@ typedef struct window_t {
   int x;
   int starty;
   int startx;
-  char label[15];
+  char label[20];
 } window_t;
 
 typedef struct {
