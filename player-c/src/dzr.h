@@ -38,12 +38,13 @@ const Menu_Options_t GLOBAL_PLAYLIST_OPTIONS = {
 };
 
 typedef struct command_t {
+    char * desc;
     int key;
     void (* func)(va_list args);
 } command_t; 
 
 #define CTRL_D  4
-#define COMMAND  ':'
+#define SEARCH  ':'
 #define UP KEY_UP
 #define DOWN KEY_DOWN
 #define LEFT KEY_LEFT

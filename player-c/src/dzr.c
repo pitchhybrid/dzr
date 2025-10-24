@@ -12,6 +12,8 @@
 #include <wchar.h>
 #include <locale.h>
 
+#define COUNT(arr) ((int) (sizeof(arr) / sizeof(arr[0])))
+
 #define REQUIRE(msg, cond) do {                                                                                                      \
     if((cond)) {                                                                                                                     \
         TRACE(msg);                                                                                                                  \
@@ -32,7 +34,7 @@ do {                                                                            
     }                                                                                                                                \
 } while(0)                                                                                                                           \
 
-int selected_items[300] = {0}; 
+int selected_items[1000] = {0}; 
 
 int update_menu(window_t *w, ITEM ** items);
 
@@ -614,27 +616,27 @@ int create_win(window_t *w) {
 }
 
 int addLabel(WINDOW *win, char *str) {
-    TRACE("addLabel: Started");
-    REQUIRE("addLabel: Invalid parameters", win == NULL || str == NULL);
+ TRACE("addLabel: Entering function");
+ REQUIRE("addLabel: Invalid parameters", win == NULL || str == NULL);
 
-    TRACE("addLabel: Allocating memory for nstr");
+ TRACE("addLabel: Allocating memory for formatted string");
 
     size_t len = strlen(str);
     char *nstr = malloc(len + 3);
 
-    REQUIRE("addLabel: Error allocating memory for nstr", nstr == NULL);
+ REQUIRE("addLabel: Failed to allocate memory for formatted string", nstr == NULL);
 
-    TRACE("addLabel: Formatting string");
+ TRACE("addLabel: Formatting label string");
     sprintf(nstr, " %.*s ", (int)len, str);
     int x = getmaxx(win) * 0.10;
     
-    REQUIRE_CODE("addLabel: Error adding string", mvwaddstr(win, 0, x, nstr) != OK, {
+ REQUIRE_CODE("addLabel: Failed to add formatted string to window", mvwaddstr(win, 0, x, nstr) != OK, {
         free(nstr);
     });
 
-    TRACE("addLabel: Freeing memory for nstr");
+ TRACE("addLabel: Freeing allocated memory for formatted string");
     free(nstr);
-    TRACE("addLabel: Ended");
+ TRACE("addLabel: Exiting function");
     return OK;
 }
 
@@ -643,7 +645,6 @@ int destroy_menu(window_t *w) {
 
     ITEM ** items = menu_items(w->menu);
     if(items){
-        TRACE("destroy_menu: destroying items");
         destroy_items(items);
     }
     TRACE("destroy_menu: Unposting menu");
@@ -651,6 +652,7 @@ int destroy_menu(window_t *w) {
     
     WINDOW * subWin = menu_sub(w->menu);
     if(subWin){
+        TRACE("destroy_menu: cleaning subwindow");
         REQUIRE("destroy_menu: Error destroying subwin", delwin(subWin) != E_OK);
     }
     
@@ -663,6 +665,9 @@ int destroy_menu(window_t *w) {
 }
 
 int destroy_items(ITEM ** items) {
+    
+    TRACE("destroy_items: destroying items");
+
     REQUIRE("destroy_items: Invalid parameters", items == NULL);
 
     TRACE("destroy_items: Freeing menu items");
@@ -835,7 +840,6 @@ void select_command(va_list args){
     TRACE("main: select");
     window_t *painel_w  = va_arg(args, window_t *);
     ITEM *it = current_item(painel_w->menu);
-    //const char *name = item_name(it);
     const char *sel =  item_description(it);
     if(sel && strcmp(sel, "MORE") == 0){
         
@@ -846,9 +850,7 @@ void select_command(va_list args){
         }
         set_top_row(painel_w->menu, 0);
         int item_c = item_count(painel_w->menu);
-        //ITEM ** itens = menu_items(painel_w->menu);
         for(int i = 0; i < item_c; ++i){
-            // TRACE("item a %p b %i", itens[i], selected_items[i]);
             if(selected_items[i] == 1){
                 drive_menu(painel_w, REQ_TOGGLE_ITEM);    
             }
@@ -864,7 +866,7 @@ void select_command(va_list args){
 }
 
 void search(va_list args){
-     TRACE("main: search");
+    TRACE("main: search");
     window_t *painel_w  = va_arg(args, window_t *);
     int ch = getch();
     char * type = type_search(ch);
@@ -876,50 +878,53 @@ void search(va_list args){
     }
 }
 
+void enter_command(va_list args){
+
+}
+
 static command_t commands[] = {
     {
-        UP, up_command
+        "UP", UP, up_command
     },
     {
-        DOWN, down_command
+        "DOWN", DOWN, down_command
     },
     {
-        PAGE_UP, page_up_command
+        "PAGE UP", PAGE_UP, page_up_command
     },
     {
-        PAGE_DOWN, page_down_command
+        "PAGE DOWN", PAGE_DOWN, page_down_command
     },
     {
-        HOME, home_command
+        "FIRST ITEM MENU", HOME, home_command
     },
     {
-        END, end_command
+        "LAST ITEM MENU", END, end_command
     },
     {
-        LEFT, left_command
+        "LEFT", LEFT, left_command
     },
     {
-        RIGHT, right_command
+        "RIGHT", RIGHT, right_command
     },
     {
-        SELECT, select_command
+        "SELECT ITEM MENU", SELECT, select_command
     },
     {
-        COMMAND, search
+        "SEARCH", SEARCH, search
     },
-    { 0 , NULL }
+    {
+        "ENTER", ENTER, enter_command
+    }
+    
 };
 
 
 int do_command(int ch, ...){
     TRACE("do_command init");
-    for(int i=0;;i++){
-        if(commands[i].key == 0){
-            TRACE("do_command end");
-            break;
-        }
+    for(int i=0; i < COUNT(commands); i++){
         if(commands[i].key == ch ){
-            TRACE("do_command exec");
+            TRACE("do_command %s exec", commands[i].desc);
             va_list args;
             va_start(args, 0);
             commands[i].func(args);
