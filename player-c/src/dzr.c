@@ -846,17 +846,13 @@ void select_command(va_list args){
         }
         set_top_row(painel_w->menu, 0);
         int item_c = item_count(painel_w->menu);
-        ITEM ** itens = menu_items(painel_w->menu);
+        //ITEM ** itens = menu_items(painel_w->menu);
         for(int i = 0; i < item_c; ++i){
-            TRACE("item a %p b %i", itens[i], selected_items[i]);
-            // drive_menu(painel_w, REQ_DOWN_ITEM);
-
-            // if(itens[i] && selected_items[i]){
-            //     if(strcmp(item_description(itens[i]), item_description(selected_items[i])) == 0){
-            //         drive_menu(painel_w, REQ_TOGGLE_ITEM);
-            //     }
-            // }
-           
+            // TRACE("item a %p b %i", itens[i], selected_items[i]);
+            if(selected_items[i] == 1){
+                drive_menu(painel_w, REQ_TOGGLE_ITEM);    
+            }
+            drive_menu(painel_w, REQ_DOWN_ITEM);
         }
     }else{
         int index = item_index(it);
