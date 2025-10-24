@@ -11,10 +11,11 @@ const wait = (ms = 1000) => new Promise(resolve => setTimeout(resolve, ms));
 // still no fetch() in 2023 ?
 const fetch = (url, opt, data) => new Promise((resolve, reject) => {
 	console.log({ url, opt, data })
-	const chunks = [], req = https.request(url, { rejectUnauthorized: conf().get('secure'), ...opt }, res => {
-		res.on('data', chunk => chunks.push(chunk));
-		res.on('end', () => resolve(Buffer.concat(chunks)));
-	}).on('error', reject);
+	const chunks = [],
+		req = https.request(url, { rejectUnauthorized: conf().get('secure'), ...opt }, res => {
+			res.on('data', chunk => chunks.push(chunk));
+			res.on('end', () => resolve(Buffer.concat(chunks)));
+		}).on('error', reject);
 	if (data) req.write(data);
 	req.end();
 });
@@ -29,7 +30,7 @@ async function browse(url_or_event_or_ids, label) {
 	try {
 		if (Array.isArray(url_or_event_or_ids)) return url_or_event_or_ids.map(id => ({ id }));
 		const ignoreFocusOut = true;
-		const url = typeof (url_or_event_or_ids) == "string" ? url_or_event_or_ids : '/';
+		const url = typeof(url_or_event_or_ids) == "string" ? url_or_event_or_ids : '/';
 		const id = url.replace(/\d+/g, '0').replace(/[^\w]/g, '_');
 		const menus = conf().get('menus');
 		const title = (label || '').replace(/\$\(.+?\)/g, '');
@@ -51,7 +52,8 @@ async function browse(url_or_event_or_ids, label) {
 			const canPickMany = !!data.find(item => item.type == "track");
 			const type2icon = conf().get('type2icon');
 			const choices = data.map(entry => ({
-				...entry, picked,
+				...entry,
+				picked,
 				label: (type2icon[entry.type] || '') + (entry.title_short || entry.name || entry.title),
 				description: [entry.artist?.name, entry.title_version, entry.nb_tracks].join(' '),
 				path: `/${entry.type}/${entry.id}`,
@@ -66,8 +68,7 @@ let DZR_PNG, USR_NFO;
 const with_url = async (songs) => songs?.length ? await vscode.window.withProgress({ title: 'Fetching', location }, async (progress) => {
 	try { // take 7s (with, or without agent)
 		const next = (message, val) => (progress.report({ increment: 100 / 4, message }), val);
-		const gw = async (method, arl, sid, api_token = "", opt = {}, data) => JSON.parse(await fetch(`${base}&method=${method}&api_token=${api_token}`,
-			{ ...opt, headers: { Cookie: `sid=${sid}; arl=${arl}`, ...opt?.headers } }, data)).results;
+		const gw = async (method, arl, sid, api_token = "", opt = {}, data) => JSON.parse(await fetch(`${base}&method=${method}&api_token=${api_token}`, { ...opt, headers: { Cookie: `sid=${sid}; arl=${arl}`, ...opt?.headers } }, data)).results;
 		const base = "https://www.deezer.com/ajax/gw-light.php?input=3&api_version=1.0";
 		let DZR_ARL = next("ARL", conf().get('arl'));
 		if (!DZR_ARL) {
@@ -136,7 +137,7 @@ class DzrWebView { // can't Audio() in VSCode, we need a webview
 			return true;
 		}
 	});
-
+	
 	constructor() {
 		this.initAckSemaphore();
 		this.state.queue = conf().get('queue'); // first is best
@@ -149,7 +150,7 @@ class DzrWebView { // can't Audio() in VSCode, we need a webview
 		this.statuses[0].text = this.state.ready && (this.state.playing ? "$(debug-pause)" : "$(play)");
 		this.statuses[1].tooltip = this.state.ready ? label : "Initiate interaction first";
 		this.statuses[1].text = this.state.ready ? label.length < 20 ? label : (label.slice(0, 20) + '…') : "$(play)"
-		this.statuses[2].text = this.state.ready && this.state.queue.length ? `${index + 1 || '?'}/${this.state.queue.length} $(chevron-right)` : '';//debug-step-over
+		this.statuses[2].text = this.state.ready && this.state.queue.length ? `${index + 1 || '?'}/${this.state.queue.length} $(chevron-right)` : ''; //debug-step-over
 		this.treeView.title = (this.state.queue?.length ? `${index + 1 || '?'}/${this.state.queue.length}` : '') + ` loop:${this.state.looping}`;
 		this.treeView.message = this.state.queue?.length ? "" : "Empty Queue. Add tracks from the '+' menu";
 		this.treeView.badge = { tooltip: label, value: this.state.playing ? index + 1 : 0 }
@@ -189,7 +190,9 @@ class DzrWebView { // can't Audio() in VSCode, we need a webview
 	onDidChangeTreeData = this._onDidChangeTreeData.event;
 	/**@type {import('vscode').TreeView}*/
 	treeView = vscode.window.createTreeView('dzr.queue', { treeDataProvider: this, dragAndDropController: this, canSelectMany: true });
-	highlighted = (label, active) => ({ label, highlights:/**@type {[number, number][]}*/(active ? [[0, label.length]] : []) })
+	highlighted = (label, active) => ({ label, highlights: /**@type {[number, number][]}*/ (active ? [
+			[0, label.length]
+		] : []) })
 	/**@returns {vscode.TreeItem} */
 	getTreeItem = (item) => ({
 		iconPath: new vscode.ThemeIcon("music"),
@@ -200,7 +203,7 @@ class DzrWebView { // can't Audio() in VSCode, we need a webview
 	})
 	getParent = () => null
 	getChildren = () => {
-
+		
 		return this.state.queue
 	}
 	async handleDrag(sources, treeDataTransfer) {
@@ -214,7 +217,7 @@ class DzrWebView { // can't Audio() in VSCode, we need a webview
 		this.state.queue = [...striped.slice(0, index), ...sources, ...striped.slice(index)];
 	}
 }
-exports.activate = async function (/**@type {import('vscode').ExtensionContext}*/ context) {
+exports.activate = async function( /**@type {import('vscode').ExtensionContext}*/ context) {
 	// deezer didn't DMCA'd dzr so let's follow the same path here
 	conf().get('cbc') || vscode.window.withProgress({ title: 'Extracting CBC key...', location }, async () => {
 		const html_url = 'https://www.deezer.com/en/channels/explore';
@@ -223,7 +226,7 @@ exports.activate = async function (/**@type {import('vscode').ExtensionContext}*
 		if (!js_url) return await vscode.window.showErrorMessage('CBC Extract: No JS WebApp found');
 		const keys = (await fetch(js_url)).toString('utf-8').match(/%5B0x..%2C.{39}%2C0x..%5D/g);
 		const [a, b] = keys.map(part => part.slice(3, -3).split('%2C').map(i => String.fromCharCode(parseInt(i))).reverse());
-		const cbc = a.map((a, i) => `${a}${b[i]}`).join('');// zip a+b
+		const cbc = a.map((a, i) => `${a}${b[i]}`).join(''); // zip a+b
 		const sha = crypto.createHash('sha1').update(cbc).digest('hex').slice(0, 8);
 		if (sha != '3ad58d92') return await vscode.window.showErrorMessage('Bad extracted key');
 		conf().update('cbc', cbc, vscode.ConfigurationTarget.Global);
@@ -231,10 +234,11 @@ exports.activate = async function (/**@type {import('vscode').ExtensionContext}*
 	const dzr = new DzrWebView();
 	const htmlUri = vscode.Uri.joinPath(context.extensionUri, 'webview.html');
 	const iconUri = vscode.Uri.joinPath(context.extensionUri, 'logo.svg'); //same for light+dark
-
+	
 	context.subscriptions.push(...dzr.statuses, dzr.treeView,
 		// catch vscode://yne.dzr/* urls
-		vscode.window.registerUriHandler({ handleUri(uri) { (({ path, query }) => vscode.commands.executeCommand(`dzr.${path.slice(1)}`, ...(query ? JSON.parse(query) : [])))(uri); } }),
+		vscode.window.registerUriHandler({ handleUri(uri) {
+				(({ path, query }) => vscode.commands.executeCommand(`dzr.${path.slice(1)}`, ...(query ? JSON.parse(query) : [])))(uri); } }),
 		vscode.commands.registerCommand('dzr.show', () => dzr.show(htmlUri, iconUri)),
 		vscode.commands.registerCommand("dzr.play", () => dzr.post('play')),
 		vscode.commands.registerCommand("dzr.pause", () => dzr.post('pause')),
@@ -270,7 +274,7 @@ exports.activate = async function (/**@type {import('vscode').ExtensionContext}*
 				while (!dzr.state.ready) await wait();
 			}
 			if ((dzr.state.queue[pos].expire || 0) < (+new Date() / 1000)) {
-				dzr.state.queue = await with_url(dzr.state.queue);//TODO: hope item is now up to date
+				dzr.state.queue = await with_url(dzr.state.queue); //TODO: hope item is now up to date
 			}
 			const prev = dzr.state?.current;
 			dzr.state.current = dzr.state.queue[pos];
@@ -280,7 +284,7 @@ exports.activate = async function (/**@type {import('vscode').ExtensionContext}*
 			const md5 = hex(crypto.createHash('md5').update(`${dzr.state.current.id}`).digest('hex'));
 			const key = Buffer.from(hex(conf().get('cbc')).map((c, i) => c ^ md5[i] ^ md5[i + 16]));
 			const iv = Buffer.from([0, 1, 2, 3, 4, 5, 6, 7]);
-			const stripe = 2048;//TODO:use .pipe() API https://codereview.stackexchange.com/questions/57492/
+			const stripe = 2048; //TODO:use .pipe() API https://codereview.stackexchange.com/questions/57492/
 			dzr.post('open', dzr.state.current, conf().get("volume"));
 			const buf_enc = await fetch(dzr.state.current.url);
 			for (let pos = 0; pos < buf_enc.length; pos += stripe) {
