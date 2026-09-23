@@ -6,9 +6,9 @@
   #include <menu.h>
   #include <panel.h>
 #else
-  #include <ncursesw/curses.h>
-  #include <ncursesw/menu.h>
-  #include <ncursesw/panel.h>
+  #include <ncurses/curses.h>
+  #include <ncurses/menu.h>
+  #include <ncurses/panel.h>
 #endif
 
 

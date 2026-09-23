@@ -12,7 +12,7 @@
 #ifdef __linux__
   #include <ncurses.h>
 #else
-  #include <ncursesw/curses.h>
+  #include <ncurses/curses.h>
 #endif
 
 static inline char * format_string(char* fmt, ...){
@@ -48,7 +48,7 @@ do {                                                    \
   }                                                     \
 } while(0)                                              \
 
-#define TRACE_MODE 1
+#define TRACE_MODE 0
 
 #if TRACE_MODE
   #define TRACE(fmt, ...)                                                        \

@@ -329,21 +329,6 @@
     async function get(url, headers = {}, type = 'json') {
       const { origin } = new URL(url);
 
-      // Solicita permissões de maneira assíncrona
-      const granted = await new Promise((resolve) => {
-        chrome.permissions.request(
-          {
-            permissions: ["tabs"],
-            origins: [`${origin}/*`],
-          },
-          resolve
-        );
-      });
-
-      if (!granted) {
-        throw new Error("Permission denied");
-      }
-
       try {
         const response = await fetch(url, {
           method: "GET",
@@ -373,20 +358,6 @@
 
     async function post(url, headers = {}, data = {}) {
       const { origin } = new URL(url);
-
-      const granted = await new Promise((resolve) => {
-        chrome.permissions.request(
-          {
-            permissions: ["tabs"],
-            origins: [`${origin}/*`],
-          },
-          resolve
-        );
-      });
-
-      if (!granted) {
-        throw new Error("Permission denied");
-      }
 
       try {
         const response = await fetch(url, {
